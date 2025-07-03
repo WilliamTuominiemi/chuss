@@ -14,7 +14,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let board = Board::start_position();
+    let board: Board = Board::start_position();
 
     loop {
         clear_background(LIGHTGRAY);
@@ -23,38 +23,42 @@ async fn main() {
 
         draw_board();
 
-        let mut piece_index = 0;
-        for piece in board.get_all_pieces() {
-            let row = piece_index / 8;
-            let col = piece_index % 8;
-            let block_size = screen_width() / 9.0;
-            let block_offset = screen_width() / 9.0 / 2.0;
-            let piece_x = col as f32 * block_size + 5.0 + block_size / 2.0;
-            let piece_y = row as f32 * block_size + block_size / 2.0;
-
-            if let Some(piece) = piece {
-                let color_string = format!("{:?}", piece.color);
-                let piece_str = format!("{:?}", piece.kind);
-                draw_text(
-                    &color_string,
-                    piece_x,
-                    piece_y + block_offset,
-                    30.0,
-                    DARKGRAY,
-                );
-                draw_text(
-                    &piece_str,
-                    piece_x,
-                    piece_y + block_offset * 1.5,
-                    30.0,
-                    DARKGRAY,
-                );
-            }
-
-            piece_index += 1;
-        }
+        draw_pieces(&board);
 
         next_frame().await
+    }
+}
+
+fn draw_pieces(board: &Board) {
+    let mut piece_index = 0;
+    for piece in board.get_all_pieces() {
+        let row = piece_index / 8;
+        let col = piece_index % 8;
+        let block_size = screen_width() / 9.0;
+        let block_offset = screen_width() / 9.0 / 2.0;
+        let piece_x = col as f32 * block_size + 5.0 + block_size / 2.0;
+        let piece_y = row as f32 * block_size + block_size / 2.0;
+
+        if let Some(piece) = piece {
+            let color_string = format!("{:?}", piece.color);
+            let piece_str = format!("{:?}", piece.kind);
+            draw_text(
+                &color_string,
+                piece_x,
+                piece_y + block_offset,
+                30.0,
+                DARKGRAY,
+            );
+            draw_text(
+                &piece_str,
+                piece_x,
+                piece_y + block_offset * 1.5,
+                30.0,
+                DARKGRAY,
+            );
+        }
+
+        piece_index += 1;
     }
 }
 
