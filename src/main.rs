@@ -16,6 +16,8 @@ fn window_conf() -> Conf {
 async fn main() {
     let board: Board = Board::start_position();
 
+    let mut selected_square: (f32, f32) = (-1.0, -1.0);
+
     loop {
         clear_background(LIGHTGRAY);
 
@@ -23,10 +25,56 @@ async fn main() {
 
         draw_board();
 
+        selected_square = set_new_selected_square(selected_square);
+
+        draw_selected_square(selected_square);
+
         draw_pieces(&board);
 
         next_frame().await
     }
+}
+
+fn set_new_selected_square(selected_square: (f32, f32)) -> (f32, f32) {
+    if is_mouse_button_pressed(MouseButton::Left) {
+        let mouse_grid_pos_x = mouse_position().0;
+        let mouse_grid_pos_y = mouse_position().1;
+
+        let new_selected_square = (
+            snap_to_grid(mouse_grid_pos_x),
+            snap_to_grid(mouse_grid_pos_y),
+        );
+
+        if new_selected_square != selected_square {
+            return new_selected_square;
+        } else {
+            return (-1.0, -1.0);
+        }
+    }
+
+    return selected_square;
+}
+
+fn draw_selected_square(selected_square: (f32, f32)) {
+    let block_size = screen_width() / 9.0;
+
+    if selected_square != (-1.0, -1.0) {
+        draw_rectangle(
+            selected_square.0,
+            selected_square.1,
+            block_size,
+            block_size,
+            RED,
+        );
+    }
+}
+
+fn snap_to_grid(value: f32) -> f32 {
+    let block_size = screen_width() / 9.0;
+    let block_offset = screen_width() / 18.0;
+
+    let index = ((value - block_offset) / block_size).floor();
+    index * block_size + block_offset
 }
 
 fn draw_pieces(board: &Board) {
