@@ -14,7 +14,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let board: Board = Board::start_position();
+    let mut board: Board = Board::start_position();
 
     let mut selected_square: (f32, f32) = (-1.0, -1.0);
     let mut selected_piece: Option<Piece> = None;
@@ -31,8 +31,9 @@ async fn main() {
 
         selected_piece = get_selected_piece(selected_square, &board);
 
-        if let Some(selected_piece) = selected_piece {
-            possible_moves = selected_piece.possible_moves();
+        if let Some(piece) = selected_piece {
+            possible_moves = piece.possible_moves();
+            selected_square = move_piece(selected_square, piece, &possible_moves, &mut board);
         } else {
             possible_moves.clear();
         }
@@ -47,25 +48,66 @@ async fn main() {
     }
 }
 
+fn move_piece(
+    selected_square: (f32, f32),
+    selected_piece: Piece,
+    possible_moves: &Vec<(i32, i32)>,
+    board: &mut Board,
+) -> (f32, f32) {
+    if is_mouse_button_pressed(MouseButton::Left) {
+        let mouse_grid_pos_x = snap_to_grid(mouse_position().0);
+        let mouse_grid_pos_y = snap_to_grid(mouse_position().1);
+
+        let clicked_square = coordinate_to_grid_square((mouse_grid_pos_x, mouse_grid_pos_y));
+        let current_square = coordinate_to_grid_square(selected_square);
+
+        for mv in possible_moves {
+            let possible_new_coord = (
+                (current_square.0 as i32 - mv.0) as usize,
+                (current_square.1 as i32 - mv.1) as usize,
+            );
+
+            if possible_new_coord.0 == clicked_square.0 && possible_new_coord.1 == clicked_square.1
+            {
+                board.set(current_square.0, current_square.1, None);
+                board.set(
+                    possible_new_coord.0,
+                    possible_new_coord.1,
+                    Some(selected_piece),
+                );
+                return (-1.0, -1.0);
+            }
+        }
+    }
+
+    selected_square
+}
+
 fn get_selected_piece(coordinates: (f32, f32), board: &Board) -> Option<Piece> {
     if coordinates.0 >= 0.0 && coordinates.1 >= 0.0 {
-        let block_offset: f32 = screen_width() / 18.0;
-        let block_size: f32 = screen_width() / 9.0;
-
-        let adjusted_coordinates: (f32, f32) = (
-            ((coordinates.0 - block_offset) / block_size),
-            ((coordinates.1 - block_offset) / block_size),
-        );
-
-        let formatted_coordinates: (usize, usize) = (
-            adjusted_coordinates.0.round() as usize,
-            adjusted_coordinates.1.round() as usize,
-        );
+        let formatted_coordinates: (usize, usize) = coordinate_to_grid_square(coordinates);
 
         return board.get(formatted_coordinates.0, formatted_coordinates.1);
     } else {
         return None;
     }
+}
+
+fn coordinate_to_grid_square(coordinates: (f32, f32)) -> (usize, usize) {
+    let block_offset: f32 = screen_width() / 18.0;
+    let block_size: f32 = screen_width() / 9.0;
+
+    let adjusted_coordinates: (f32, f32) = (
+        ((coordinates.0 - block_offset) / block_size),
+        ((coordinates.1 - block_offset) / block_size),
+    );
+
+    let formatted_coordinates: (usize, usize) = (
+        adjusted_coordinates.0.round() as usize,
+        adjusted_coordinates.1.round() as usize,
+    );
+
+    return formatted_coordinates;
 }
 
 fn draw_possible_moves(selected_square: (f32, f32), moves: &Vec<(i32, i32)>) {
@@ -86,7 +128,9 @@ fn draw_possible_moves(selected_square: (f32, f32), moves: &Vec<(i32, i32)>) {
 }
 
 fn set_new_selected_square(selected_square: (f32, f32)) -> (f32, f32) {
-    if is_mouse_button_pressed(MouseButton::Left) {
+    if selected_square.0 == -10.0 {
+        return (-1.0, -1.0);
+    } else if is_mouse_button_pressed(MouseButton::Left) {
         let mouse_grid_pos_x = mouse_position().0;
         let mouse_grid_pos_y = mouse_position().1;
 
@@ -97,15 +141,15 @@ fn set_new_selected_square(selected_square: (f32, f32)) -> (f32, f32) {
 
         let block_size = screen_width() / 9.0;
 
-        if new_selected_square != selected_square
+        if new_selected_square == selected_square {
+            return (-1.0, -1.0);
+        } else if selected_square == (-1.0, -1.0)
             && new_selected_square.0 > 0.0
             && new_selected_square.1 > 0.0
             && new_selected_square.0 < screen_width() - block_size
             && new_selected_square.0 < screen_height() - block_size
         {
             return new_selected_square;
-        } else {
-            return (-1.0, -1.0);
         }
     }
 
