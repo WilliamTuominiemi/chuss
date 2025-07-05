@@ -17,6 +17,8 @@ async fn main() {
     let board: Board = Board::start_position();
 
     let mut selected_square: (f32, f32) = (-1.0, -1.0);
+    let mut selected_piece: Option<Piece> = None;
+    let mut possible_moves: Vec<(i32, i32)> = Vec::new();
 
     loop {
         clear_background(LIGHTGRAY);
@@ -27,11 +29,59 @@ async fn main() {
 
         selected_square = set_new_selected_square(selected_square);
 
+        selected_piece = get_selected_piece(selected_square, &board);
+
+        if let Some(selected_piece) = selected_piece {
+            possible_moves = selected_piece.possible_moves();
+        } else {
+            possible_moves.clear();
+        }
+
         draw_selected_square(selected_square);
+
+        draw_possible_moves(selected_square, &possible_moves);
 
         draw_pieces(&board);
 
         next_frame().await
+    }
+}
+
+fn get_selected_piece(coordinates: (f32, f32), board: &Board) -> Option<Piece> {
+    if coordinates.0 >= 0.0 && coordinates.1 >= 0.0 {
+        let block_offset: f32 = screen_width() / 18.0;
+        let block_size: f32 = screen_width() / 9.0;
+
+        let adjusted_coordinates: (f32, f32) = (
+            ((coordinates.0 - block_offset) / block_size),
+            ((coordinates.1 - block_offset) / block_size),
+        );
+
+        let formatted_coordinates: (usize, usize) = (
+            adjusted_coordinates.0.round() as usize,
+            adjusted_coordinates.1.round() as usize,
+        );
+
+        return board.get(formatted_coordinates.0, formatted_coordinates.1);
+    } else {
+        return None;
+    }
+}
+
+fn draw_possible_moves(selected_square: (f32, f32), moves: &Vec<(i32, i32)>) {
+    let block_size = screen_width() / 9.0;
+
+    if selected_square != (-1.0, -1.0) {
+        for mv in moves {
+            if *mv != (0, 0) {
+                let coordinate = (
+                    selected_square.0 + mv.0 as f32 * block_size,
+                    selected_square.1 - mv.1 as f32 * block_size,
+                );
+
+                draw_rectangle(coordinate.0, coordinate.1, block_size, block_size, GREEN);
+            }
+        }
     }
 }
 
@@ -45,7 +95,14 @@ fn set_new_selected_square(selected_square: (f32, f32)) -> (f32, f32) {
             snap_to_grid(mouse_grid_pos_y),
         );
 
-        if new_selected_square != selected_square {
+        let block_size = screen_width() / 9.0;
+
+        if new_selected_square != selected_square
+            && new_selected_square.0 > 0.0
+            && new_selected_square.1 > 0.0
+            && new_selected_square.0 < screen_width() - block_size
+            && new_selected_square.0 < screen_height() - block_size
+        {
             return new_selected_square;
         } else {
             return (-1.0, -1.0);

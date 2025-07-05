@@ -1,4 +1,6 @@
-#[derive(Clone, Copy, Debug)]
+use std::fmt::Pointer;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PieceType {
     King,
     Queen,
@@ -8,7 +10,7 @@ pub enum PieceType {
     Pawn,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Player {
     White,
     Black,
@@ -22,6 +24,21 @@ pub struct Piece {
 
 pub struct Board {
     pub squares: [Option<Piece>; 64],
+}
+
+impl Piece {
+    pub fn possible_moves(&self) -> Vec<(i32, i32)> {
+        let mut moves: Vec<(i32, i32)> = Vec::new();
+
+        let multiplier: isize = if self.color == Player::White { -1 } else { 1 };
+
+        if self.kind == PieceType::Pawn {
+            moves.push((0, (1 * multiplier) as i32));
+            moves.push((0, (2 * multiplier) as i32));
+        }
+
+        return moves;
+    }
 }
 
 impl Board {
