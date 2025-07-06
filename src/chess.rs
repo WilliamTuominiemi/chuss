@@ -35,6 +35,42 @@ impl Piece {
         if self.kind == PieceType::Pawn {
             moves.push((0, (1 * multiplier) as i32));
             moves.push((0, (2 * multiplier) as i32));
+        } else if self.kind == PieceType::Knight {
+            moves.push((1, 2));
+            moves.push((-1, 2));
+            moves.push((1, -2));
+            moves.push((-1, -2));
+
+            moves.push((2, 1));
+            moves.push((-2, 1));
+            moves.push((2, -1));
+            moves.push((-2, -1));
+        } else if self.kind == PieceType::Bishop {
+            for i in 1..8 {
+                moves.push((i, i));
+                moves.push((-i, i));
+                moves.push((i, -i));
+                moves.push((-i, -i));
+            }
+        } else if self.kind == PieceType::Rook {
+            for i in 1..8 {
+                moves.push((0, i));
+                moves.push((0, -i));
+                moves.push((i, 0));
+                moves.push((-i, 0));
+            }
+        } else if self.kind == PieceType::Queen {
+            for i in 1..8 {
+                moves.push((0, i));
+                moves.push((0, -i));
+                moves.push((i, 0));
+                moves.push((-i, 0));
+            }
+        } else if self.kind == PieceType::King {
+            moves.push((0, 1));
+            moves.push((0, -1));
+            moves.push((1, 0));
+            moves.push((-1, 0));
         }
 
         return moves;

@@ -115,12 +115,17 @@ fn draw_possible_moves(selected_square: (f32, f32), moves: &Vec<(i32, i32)>) {
 
     if selected_square != (-1.0, -1.0) {
         for mv in moves {
-            if *mv != (0, 0) {
-                let coordinate = (
-                    selected_square.0 + mv.0 as f32 * block_size,
-                    selected_square.1 - mv.1 as f32 * block_size,
-                );
+            let coordinate = (
+                selected_square.0 + mv.0 as f32 * block_size,
+                selected_square.1 - mv.1 as f32 * block_size,
+            );
 
+            if *mv != (0, 0)
+                && coordinate.0 > 0.0
+                && coordinate.0 < screen_width() - block_size
+                && coordinate.1 > 0.0
+                && coordinate.1 < screen_height() - block_size
+            {
                 draw_rectangle(coordinate.0, coordinate.1, block_size, block_size, GREEN);
             }
         }
