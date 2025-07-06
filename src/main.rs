@@ -23,7 +23,7 @@ async fn main() {
     let mut turn = false;
 
     loop {
-        clear_background(LIGHTGRAY);
+        clear_background(WHITE);
 
         draw_edges();
 
@@ -50,7 +50,7 @@ async fn main() {
 
         draw_possible_moves(selected_square, &possible_moves, &board);
 
-        draw_pieces(&board);
+        draw_pieces(&board).await;
 
         draw_turn_string(turn);
 
@@ -241,32 +241,30 @@ fn snap_to_grid(value: f32) -> f32 {
     index * block_size + block_offset
 }
 
-fn draw_pieces(board: &Board) {
+async fn draw_pieces(board: &Board) {
     let mut piece_index = 0;
     for piece in board.get_all_pieces() {
         let row = piece_index / 8;
         let col = piece_index % 8;
         let block_size = screen_width() / 9.0;
-        let block_offset = screen_width() / 9.0 / 2.0;
-        let piece_x = col as f32 * block_size + 5.0 + block_size / 2.0;
+        let block_offset = screen_width() / 18.0 / 3.0;
+
+        let piece_x = col as f32 * block_size + block_size / 2.0;
         let piece_y = row as f32 * block_size + block_size / 2.0;
 
         if let Some(piece) = piece {
-            let color_string = format!("{:?}", piece.color);
-            let piece_str = format!("{:?}", piece.kind);
-            draw_text(
-                &color_string,
-                piece_x,
+            let color_string = format!("{:?}", piece.color).to_lowercase(); // "black"
+            let piece_str = format!("{:?}", piece.kind).to_lowercase(); // "queen"
+
+            let texture_path = format!("images/{}_{}.png", color_string, piece_str);
+
+            let texture: Texture2D = load_texture(&texture_path).await.unwrap();
+
+            draw_texture(
+                &texture,
+                piece_x + block_offset,
                 piece_y + block_offset,
-                30.0,
-                DARKGRAY,
-            );
-            draw_text(
-                &piece_str,
-                piece_x,
-                piece_y + block_offset * 1.5,
-                30.0,
-                DARKGRAY,
+                WHITE,
             );
         }
 
@@ -290,12 +288,12 @@ fn draw_board() {
 
     for i in 0..8 {
         for j in 0..8 {
-            let mut block_color: Color = WHITE;
+            let mut block_color: Color = BEIGE;
 
             if i % 2 == 1 && j % 2 == 0 {
-                block_color = BLACK;
+                block_color = BROWN;
             } else if i % 2 == 0 && j % 2 == 1 {
-                block_color = BLACK;
+                block_color = BROWN;
             }
 
             draw_rectangle(
