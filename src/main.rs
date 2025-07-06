@@ -20,6 +20,8 @@ async fn main() {
     let mut selected_piece: Option<Piece> = None;
     let mut possible_moves: Vec<(i32, i32)> = Vec::new();
 
+    let mut turn = false;
+
     loop {
         clear_background(LIGHTGRAY);
 
@@ -27,13 +29,19 @@ async fn main() {
 
         draw_board();
 
-        selected_square = set_new_selected_square(selected_square);
+        selected_square = set_new_selected_square(selected_square, turn, &board);
 
         selected_piece = get_piece_in_square(coordinate_to_grid_square(selected_square), &board);
 
         if let Some(piece) = selected_piece {
             possible_moves = piece.possible_moves();
-            selected_square = move_piece(selected_square, piece, &possible_moves, &mut board);
+            selected_square = move_piece(
+                selected_square,
+                piece,
+                &possible_moves,
+                &mut board,
+                &mut turn,
+            );
         } else {
             possible_moves.clear();
         }
@@ -44,6 +52,8 @@ async fn main() {
 
         draw_pieces(&board);
 
+        draw_turn_string(turn);
+
         next_frame().await
     }
 }
@@ -53,6 +63,7 @@ fn move_piece(
     selected_piece: Piece,
     possible_moves: &Vec<(i32, i32)>,
     board: &mut Board,
+    turn: &mut bool,
 ) -> (f32, f32) {
     if is_mouse_button_pressed(MouseButton::Left) {
         let mouse_grid_pos_x = snap_to_grid(mouse_position().0);
@@ -82,6 +93,7 @@ fn move_piece(
                     possible_new_coord.1,
                     Some(selected_piece),
                 );
+                *turn = !*turn;
                 return (-1.0, -1.0);
             }
         }
@@ -174,7 +186,7 @@ fn check_if_square_is_blocked(
     false
 }
 
-fn set_new_selected_square(selected_square: (f32, f32)) -> (f32, f32) {
+fn set_new_selected_square(selected_square: (f32, f32), turn: bool, board: &Board) -> (f32, f32) {
     if selected_square.0 == -10.0 {
         return (-1.0, -1.0);
     } else if is_mouse_button_pressed(MouseButton::Left) {
@@ -196,7 +208,13 @@ fn set_new_selected_square(selected_square: (f32, f32)) -> (f32, f32) {
             && new_selected_square.0 < screen_width() - block_size
             && new_selected_square.0 < screen_height() - block_size
         {
-            return new_selected_square;
+            let piece = get_piece_in_square(coordinate_to_grid_square(new_selected_square), board);
+            if let Some(piece) = piece {
+                if (!turn && piece.color == Player::Black) || (turn && piece.color == Player::White)
+                {
+                    return new_selected_square;
+                }
+            }
         }
     }
 
@@ -256,6 +274,16 @@ fn draw_pieces(board: &Board) {
 
         piece_index += 1;
     }
+}
+
+fn draw_turn_string(turn: bool) {
+    let mut turn_string = "Blacks turn";
+
+    if turn {
+        turn_string = "Whites turn";
+    }
+
+    draw_text(&turn_string, 20.0, 30.0, 30.0, BLACK);
 }
 
 fn draw_board() {
