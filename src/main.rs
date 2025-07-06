@@ -29,7 +29,7 @@ async fn main() {
 
         selected_square = set_new_selected_square(selected_square);
 
-        selected_piece = get_selected_piece(selected_square, &board);
+        selected_piece = get_piece_in_square(coordinate_to_grid_square(selected_square), &board);
 
         if let Some(piece) = selected_piece {
             possible_moves = piece.possible_moves();
@@ -40,7 +40,7 @@ async fn main() {
 
         draw_selected_square(selected_square);
 
-        draw_possible_moves(selected_square, &possible_moves);
+        draw_possible_moves(selected_square, &possible_moves, &board);
 
         draw_pieces(&board);
 
@@ -63,11 +63,18 @@ fn move_piece(
 
         for mv in possible_moves {
             let possible_new_coord = (
-                (current_square.0 as i32 - mv.0) as usize,
+                (current_square.0 as i32 + mv.0) as usize,
                 (current_square.1 as i32 - mv.1) as usize,
             );
 
-            if possible_new_coord.0 == clicked_square.0 && possible_new_coord.1 == clicked_square.1
+            if possible_new_coord.0 > 0
+                && possible_new_coord.1 > 0
+                && possible_new_coord.0 < 8
+                && possible_new_coord.1 < 8
+                && possible_new_coord.0 == clicked_square.0
+                && possible_new_coord.1 == clicked_square.1
+                && get_piece_in_square(possible_new_coord, &board).is_none()
+                && !check_if_square_is_blocked(possible_new_coord, &board, current_square)
             {
                 board.set(current_square.0, current_square.1, None);
                 board.set(
@@ -83,14 +90,8 @@ fn move_piece(
     selected_square
 }
 
-fn get_selected_piece(coordinates: (f32, f32), board: &Board) -> Option<Piece> {
-    if coordinates.0 >= 0.0 && coordinates.1 >= 0.0 {
-        let formatted_coordinates: (usize, usize) = coordinate_to_grid_square(coordinates);
-
-        return board.get(formatted_coordinates.0, formatted_coordinates.1);
-    } else {
-        return None;
-    }
+fn get_piece_in_square(coordinates: (usize, usize), board: &Board) -> Option<Piece> {
+    return board.get(coordinates.0, coordinates.1);
 }
 
 fn coordinate_to_grid_square(coordinates: (f32, f32)) -> (usize, usize) {
@@ -110,7 +111,7 @@ fn coordinate_to_grid_square(coordinates: (f32, f32)) -> (usize, usize) {
     return formatted_coordinates;
 }
 
-fn draw_possible_moves(selected_square: (f32, f32), moves: &Vec<(i32, i32)>) {
+fn draw_possible_moves(selected_square: (f32, f32), moves: &Vec<(i32, i32)>, board: &Board) {
     let block_size = screen_width() / 9.0;
 
     if selected_square != (-1.0, -1.0) {
@@ -125,11 +126,52 @@ fn draw_possible_moves(selected_square: (f32, f32), moves: &Vec<(i32, i32)>) {
                 && coordinate.0 < screen_width() - block_size
                 && coordinate.1 > 0.0
                 && coordinate.1 < screen_height() - block_size
+                && get_piece_in_square(coordinate_to_grid_square(coordinate), &board).is_none()
+                && !check_if_square_is_blocked(
+                    coordinate_to_grid_square(coordinate),
+                    &board,
+                    coordinate_to_grid_square(selected_square),
+                )
             {
                 draw_rectangle(coordinate.0, coordinate.1, block_size, block_size, GREEN);
             }
         }
     }
+}
+
+fn check_if_square_is_blocked(
+    target_coordinate: (usize, usize),
+    board: &Board,
+    start_coordinate: (usize, usize),
+) -> bool {
+    // Horse can jump over everything
+    let piece = get_piece_in_square(start_coordinate, board);
+    if let Some(piece) = piece {
+        if piece.kind == PieceType::Knight {
+            return false;
+        }
+    }
+
+    let dx = (target_coordinate.0 as i32 - start_coordinate.0 as i32).signum();
+    let dy = (target_coordinate.1 as i32 - start_coordinate.1 as i32).signum();
+
+    let mut path = Vec::new();
+    let mut current_x = start_coordinate.0 as i32 + dx;
+    let mut current_y = start_coordinate.1 as i32 + dy;
+
+    while (current_x as usize, current_y as usize) != target_coordinate {
+        path.push((current_x as usize, current_y as usize));
+        current_x += dx;
+        current_y += dy;
+    }
+
+    for pos in path {
+        if board.get(pos.0, pos.1).is_some() {
+            return true;
+        }
+    }
+
+    false
 }
 
 fn set_new_selected_square(selected_square: (f32, f32)) -> (f32, f32) {
