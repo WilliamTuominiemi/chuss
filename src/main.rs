@@ -78,13 +78,10 @@ fn move_piece(
                 (current_square.1 as i32 - mv.1) as usize,
             );
 
-            if possible_new_coord.0 > 0
-                && possible_new_coord.1 > 0
-                && possible_new_coord.0 < 8
+            if possible_new_coord.0 < 8
                 && possible_new_coord.1 < 8
                 && possible_new_coord.0 == clicked_square.0
                 && possible_new_coord.1 == clicked_square.1
-                && get_piece_in_square(possible_new_coord, &board).is_none()
                 && !check_if_square_is_blocked(possible_new_coord, &board, current_square)
             {
                 board.set(current_square.0, current_square.1, None);
@@ -138,7 +135,6 @@ fn draw_possible_moves(selected_square: (f32, f32), moves: &Vec<(i32, i32)>, boa
                 && coordinate.0 < screen_width() - block_size
                 && coordinate.1 > 0.0
                 && coordinate.1 < screen_height() - block_size
-                && get_piece_in_square(coordinate_to_grid_square(coordinate), &board).is_none()
                 && !check_if_square_is_blocked(
                     coordinate_to_grid_square(coordinate),
                     &board,
@@ -156,7 +152,7 @@ fn check_if_square_is_blocked(
     board: &Board,
     start_coordinate: (usize, usize),
 ) -> bool {
-    // Horse can jump over everything
+    // Knights can jump over everything
     let piece = get_piece_in_square(start_coordinate, board);
     if let Some(piece) = piece {
         if piece.kind == PieceType::Knight {
@@ -167,19 +163,21 @@ fn check_if_square_is_blocked(
     let dx = (target_coordinate.0 as i32 - start_coordinate.0 as i32).signum();
     let dy = (target_coordinate.1 as i32 - start_coordinate.1 as i32).signum();
 
-    let mut path = Vec::new();
+    let mut path: Vec<(usize, usize)> = Vec::new();
     let mut current_x = start_coordinate.0 as i32 + dx;
     let mut current_y = start_coordinate.1 as i32 + dy;
 
     while (current_x as usize, current_y as usize) != target_coordinate {
-        path.push((current_x as usize, current_y as usize));
+        if let Some(blocking_piece) = board.get(current_x as usize, current_y as usize) {
+            return true;
+        }
         current_x += dx;
         current_y += dy;
     }
 
-    for pos in path {
-        if board.get(pos.0, pos.1).is_some() {
-            return true;
+    if let Some(target_piece) = board.get(target_coordinate.0, target_coordinate.1) {
+        if let Some(start_piece) = piece {
+            return target_piece.color == start_piece.color;
         }
     }
 
