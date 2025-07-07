@@ -156,6 +156,9 @@ fn check_if_square_is_blocked(
     let piece = get_piece_in_square(start_coordinate, board);
     if let Some(piece) = piece {
         if piece.kind == PieceType::Knight {
+            if let Some(target_piece) = board.get(target_coordinate.0, target_coordinate.1) {
+                return target_piece.color == piece.color;
+            }
             return false;
         }
 
