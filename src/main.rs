@@ -158,17 +158,45 @@ fn check_if_square_is_blocked(
         if piece.kind == PieceType::Knight {
             return false;
         }
+
+        if piece.kind == PieceType::Pawn {
+            let dx = target_coordinate.0 as i32 - start_coordinate.0 as i32;
+            let dy = target_coordinate.1 as i32 - start_coordinate.1 as i32;
+
+            if dy.abs() > 1 && (start_coordinate.1 != 6 && start_coordinate.1 != 1) {
+                return true;
+            }
+
+            if dx == 0
+                && board
+                    .get(target_coordinate.0, target_coordinate.1)
+                    .is_some()
+            {
+                return true;
+            }
+
+            if dx.abs() == 1 && dy.abs() == 1 {
+                if board
+                    .get(target_coordinate.0, target_coordinate.1)
+                    .is_none()
+                {
+                    return true;
+                }
+                if let Some(target_piece) = board.get(target_coordinate.0, target_coordinate.1) {
+                    return target_piece.color == piece.color;
+                }
+            }
+        }
     }
 
     let dx = (target_coordinate.0 as i32 - start_coordinate.0 as i32).signum();
     let dy = (target_coordinate.1 as i32 - start_coordinate.1 as i32).signum();
 
-    let mut path: Vec<(usize, usize)> = Vec::new();
     let mut current_x = start_coordinate.0 as i32 + dx;
     let mut current_y = start_coordinate.1 as i32 + dy;
 
     while (current_x as usize, current_y as usize) != target_coordinate {
-        if let Some(blocking_piece) = board.get(current_x as usize, current_y as usize) {
+        if board.get(current_x as usize, current_y as usize).is_some() {
             return true;
         }
         current_x += dx;

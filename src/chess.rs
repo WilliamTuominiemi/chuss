@@ -35,6 +35,9 @@ impl Piece {
         if self.kind == PieceType::Pawn {
             moves.push((0, (1 * multiplier) as i32));
             moves.push((0, (2 * multiplier) as i32));
+
+            moves.push((1, (1 * multiplier) as i32));
+            moves.push((-1, (1 * multiplier) as i32));
         } else if self.kind == PieceType::Knight {
             moves.push((1, 2));
             moves.push((-1, 2));
